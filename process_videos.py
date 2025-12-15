@@ -21,6 +21,7 @@ from src.core.youtube import YouTubeClient
 from src.core.transcript import TranscriptExtractor
 from src.core.ai_summarizer import AISummarizer
 from src.core.email_sender import EmailSender
+from src.utils.log_cleanup import cleanup_old_logs
 from src.core.constants import (
     STATUS_PENDING, STATUS_PROCESSING, STATUS_SUCCESS,
     STATUS_FETCHING_METADATA, STATUS_FETCHING_TRANSCRIPT, STATUS_GENERATING_SUMMARY,
@@ -577,6 +578,15 @@ class VideoProcessor:
         # Clean up any stuck videos from previous runs
         self.logger.info("🔍 Checking for stuck videos...")
         self.cleanup_stuck_videos()
+
+        # Clean up old log files based on retention setting
+        try:
+            all_settings = self.settings_manager.get_all_settings(mask_secrets=False)
+            retention_days = int(all_settings.get('LOG_RETENTION_DAYS', {}).get('value') or '7')
+            self.logger.info(f"🗑️  Cleaning up logs older than {retention_days} days...")
+            cleanup_old_logs(retention_days)
+        except Exception as e:
+            self.logger.error(f"Log cleanup failed: {e}")
 
         # STEP 1: Process any pending videos from database (retries, manual adds, etc.)
         # This must come BEFORE the channels check so manually added videos are processed

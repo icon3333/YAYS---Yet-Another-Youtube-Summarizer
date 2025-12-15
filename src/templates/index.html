@@ -24,6 +24,7 @@
             <button class="tab-btn" onclick="showTab('ai')">AI</button>
             <button class="tab-btn" onclick="showTab('settings')">Settings</button>
             <button class="tab-btn" onclick="showTab('about')">About</button>
+            <button class="tab-btn" onclick="showTab('logs')">Logs</button>
         </nav>
     </header>
 
@@ -349,6 +350,36 @@
 
             </div>
 
+            <!-- Logging Configuration -->
+            <div class="settings-section">
+                <h3><i class="iconoir-terminal"></i> Logging</h3>
+
+                <div class="setting-row">
+                    <label class="setting-label" for="logRetentionDays">
+                        Log Retention Period
+                        <span class="unsaved-indicator" id="unsaved-logging" style="display: none;">
+                            (Unsaved)
+                        </span>
+                    </label>
+                    <input
+                        type="number"
+                        id="logRetentionDays"
+                        class="setting-input"
+                        min="1"
+                        max="30"
+                        value="7"
+                        oninput="showUnsavedIndicator('logging')"
+                    />
+                    <div class="setting-description">
+                        Automatically delete logs older than this many days (1-30)
+                    </div>
+                </div>
+
+                <button onclick="saveLoggingSettings()" class="btn-primary">
+                    Save Logging Settings
+                </button>
+            </div>
+
             <!-- Danger Zone Section (Separate) -->
             <div class="settings-section" style="margin-top: 40px; border: 2px solid #ff4444;">
                 <h3 style="color: #ff4444; cursor: pointer; user-select: none;" onclick="toggleDangerZone()">
@@ -510,6 +541,68 @@
                 <div style="margin-top: 60px; padding-top: 30px; border-top: 1px solid #e0e0e0; font-size: 13px; color: #999;">
                     <p>Made with care for YouTube enthusiasts</p>
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- TAB 6: LOGS -->
+    <div id="tab-logs" class="tab-content">
+        <div class="settings-container">
+            <h2>Application Logs</h2>
+
+            <!-- Log Source Toggle -->
+            <div class="log-toggle-container">
+                <button class="log-toggle-btn active" data-log="summarizer" onclick="toggleLogSource('summarizer')">
+                    Summarizer Container
+                </button>
+                <button class="log-toggle-btn" data-log="web" onclick="toggleLogSource('web')">
+                    Web Container
+                </button>
+            </div>
+
+            <!-- Filter and Search -->
+            <div class="log-controls">
+                <div class="log-control-group">
+                    <label for="logLevelFilter">Filter:</label>
+                    <select id="logLevelFilter" onchange="applyLogFilters()">
+                        <option value="all">All Levels</option>
+                        <option value="ERROR">ERROR</option>
+                        <option value="WARNING">WARNING</option>
+                        <option value="INFO">INFO</option>
+                        <option value="DEBUG">DEBUG</option>
+                    </select>
+                </div>
+
+                <div class="log-control-group">
+                    <label for="logSearch">Search:</label>
+                    <input
+                        type="text"
+                        id="logSearch"
+                        placeholder="Search logs..."
+                        oninput="applyLogFilters()"
+                    />
+                    <button class="btn-icon" onclick="clearLogSearch()" title="Clear search">✕</button>
+                </div>
+            </div>
+
+            <!-- Log Info -->
+            <div id="logInfo" class="log-info">
+                Loading logs...
+            </div>
+
+            <!-- Log Viewer -->
+            <div id="logViewer" class="log-viewer">
+                <div class="log-loading">Loading logs...</div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="log-actions">
+                <button onclick="copyAllLogs()" class="btn-secondary">Copy All Logs</button>
+                <button onclick="downloadLogs()" class="btn-secondary">Download Logs</button>
+                <button onclick="manualRefreshLogs()" class="btn-secondary">Manual Refresh</button>
+                <button id="autoRefreshBtn" onclick="toggleAutoRefresh()" class="btn-secondary">
+                    Auto-refresh: OFF
+                </button>
             </div>
         </div>
     </div>

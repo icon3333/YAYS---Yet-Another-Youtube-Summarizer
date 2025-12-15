@@ -128,8 +128,18 @@ Built with:
 - [youtube-transcript-api](https://github.com/jdepoix/youtube-transcript-api) - Primary transcript extraction
 - [Supadata.ai](https://supadata.ai) - Optional managed transcript fallback
 - [BeautifulSoup4](https://www.crummy.com/software/BeautifulSoup/) - Timedtext API parsing
-- [cryptography](https://cryptography.io/) - Settings encryption
 - [Docker](https://www.docker.com/) - Containerization
+
+---
+
+---
+
+## Recent Updates
+
+- Email encoding improvements for international characters (UTF-8 support)
+- Check interval now dynamically reads from database settings
+- Removed encryption dependencies for simplified deployment
+- Enhanced Gmail app password validation
 
 ---
 

@@ -35,12 +35,39 @@ if not os.path.exists('.env') and os.path.exists('.env.example'):
 load_dotenv()
 
 # Setup logging with dynamic log level from environment
+from logging.handlers import RotatingFileHandler
+
+# Create logs directory if it doesn't exist
+log_dir = 'logs'
+os.makedirs(log_dir, exist_ok=True)
+
 log_level = os.getenv('LOG_LEVEL', 'INFO').upper()
-logging.basicConfig(
-    level=getattr(logging, log_level, logging.INFO),
-    format='%(asctime)s [%(levelname)s] %(name)s: %(message)s',
+
+# Create root logger
+root_logger = logging.getLogger()
+root_logger.setLevel(getattr(logging, log_level, logging.INFO))
+
+# Console handler (stdout for Docker logs)
+console_handler = logging.StreamHandler(sys.stdout)
+console_handler.setLevel(logging.INFO)
+console_format = logging.Formatter(
+    '%(asctime)s [%(levelname)s] %(name)s: %(message)s',
     datefmt='%Y-%m-%d %H:%M:%S'
 )
+console_handler.setFormatter(console_format)
+root_logger.addHandler(console_handler)
+
+# File handler (shared logs directory)
+file_handler = RotatingFileHandler(
+    os.path.join(log_dir, 'web.log'),
+    maxBytes=10*1024*1024,  # 10MB
+    backupCount=5,
+    encoding='utf-8'
+)
+file_handler.setLevel(logging.DEBUG)
+file_handler.setFormatter(console_format)
+root_logger.addHandler(file_handler)
+
 logger = logging.getLogger('web')
 logger.info(f"Web app starting with log level: {log_level}")
 
@@ -1812,6 +1839,153 @@ async def execute_import(file: UploadFile = File(...)):
             status_code=500,
             detail=f"Import failed: {str(e)}"
         )
+
+
+# ===== LOGS API ENDPOINTS =====
+
+@app.get("/api/logs/list")
+async def list_logs():
+    """List available log sources with metadata"""
+    from datetime import datetime
+
+    logs_dir = Path('logs')
+    logs_config = [
+        {'name': 'web', 'display_name': 'Web Container', 'file': 'web.log'},
+        {'name': 'summarizer', 'display_name': 'Summarizer Container', 'file': 'summarizer.log'}
+    ]
+
+    result = []
+    for config in logs_config:
+        file_path = logs_dir / config['file']
+        exists = file_path.exists()
+
+        log_info = {
+            'name': config['name'],
+            'display_name': config['display_name'],
+            'file_path': str(file_path),
+            'exists': exists
+        }
+
+        if exists:
+            stat = file_path.stat()
+            log_info['size_bytes'] = stat.st_size
+            log_info['last_modified'] = datetime.fromtimestamp(stat.st_mtime).isoformat() + 'Z'
+        else:
+            log_info['size_bytes'] = 0
+            log_info['last_modified'] = None
+
+        result.append(log_info)
+
+    return {'logs': result}
+
+
+@app.get("/api/logs/{log_name}")
+async def get_logs(log_name: str, lines: int = 1000, offset: int = 0):
+    """Retrieve log content with redaction"""
+    from datetime import datetime
+    from src.utils.log_redactor import redact_sensitive_data
+    from src.utils.tail_reader import read_tail_lines
+
+    # Validate log name
+    valid_logs = {'web', 'summarizer'}
+    if log_name not in valid_logs:
+        raise HTTPException(400, f"Invalid log name: {log_name}. Must be 'web' or 'summarizer'")
+
+    # Validate parameters
+    lines = max(1, min(lines, 5000))
+    offset = max(0, offset)
+
+    file_path = Path('logs') / f'{log_name}.log'
+
+    if not file_path.exists():
+        return {
+            'log_name': log_name,
+            'content': '',
+            'total_lines': 0,
+            'returned_lines': 0,
+            'offset': offset,
+            'file_size_bytes': 0,
+            'last_modified': None
+        }
+
+    try:
+        # Use efficient tail reader - only reads necessary portion of file
+        selected_lines = read_tail_lines(str(file_path), lines, offset)
+
+        # Get total line count efficiently (without loading all content)
+        total_lines = 0
+        with open(file_path, 'rb') as f:
+            total_lines = sum(1 for _ in f)
+
+        content = ''.join(selected_lines)
+        redacted_content = redact_sensitive_data(content)
+
+        stat = file_path.stat()
+
+        return {
+            'log_name': log_name,
+            'content': redacted_content,
+            'total_lines': total_lines,
+            'returned_lines': len(selected_lines),
+            'offset': offset,
+            'file_size_bytes': stat.st_size,
+            'last_modified': datetime.fromtimestamp(stat.st_mtime).isoformat() + 'Z'
+        }
+
+    except Exception as e:
+        logger.error(f"Failed to read log file {file_path}: {e}")
+        raise HTTPException(500, f"Failed to read log file: {str(e)}")
+
+
+@app.get("/api/logs/{log_name}/download")
+async def download_logs(log_name: str):
+    """Download full log file with redaction"""
+    from datetime import datetime
+    from src.utils.log_redactor import redact_sensitive_data
+
+    valid_logs = {'web', 'summarizer'}
+    if log_name not in valid_logs:
+        raise HTTPException(400, f"Invalid log name: {log_name}")
+
+    file_path = Path('logs') / f'{log_name}.log'
+
+    if not file_path.exists():
+        raise HTTPException(404, f"Log file not found: {file_path}")
+
+    # Check file size to prevent OOM issues
+    MAX_DOWNLOAD_SIZE_MB = 50
+    MAX_DOWNLOAD_SIZE_BYTES = MAX_DOWNLOAD_SIZE_MB * 1024 * 1024
+
+    file_size = file_path.stat().st_size
+    if file_size > MAX_DOWNLOAD_SIZE_BYTES:
+        size_mb = file_size / (1024 * 1024)
+        raise HTTPException(
+            413,
+            f"Log file is too large to download ({size_mb:.1f}MB). "
+            f"Maximum size is {MAX_DOWNLOAD_SIZE_MB}MB. "
+            f"Use the logs viewer with pagination instead."
+        )
+
+    try:
+        with open(file_path, 'r', encoding='utf-8', errors='replace') as f:
+            content = f.read()
+
+        redacted_content = redact_sensitive_data(content)
+
+        timestamp = datetime.now().strftime('%Y-%m-%d-%H%M%S')
+        filename = f"yays-{log_name}-{timestamp}.log"
+
+        return StreamingResponse(
+            io.StringIO(redacted_content),
+            media_type='text/plain; charset=utf-8',
+            headers={
+                'Content-Disposition': f'attachment; filename="{filename}"'
+            }
+        )
+
+    except Exception as e:
+        logger.error(f"Failed to download log file {file_path}: {e}")
+        raise HTTPException(500, f"Failed to download log file: {str(e)}")
 
 
 if __name__ == "__main__":

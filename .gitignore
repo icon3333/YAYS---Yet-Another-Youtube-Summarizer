@@ -12,9 +12,10 @@ config.txt
 !config.txt.example
 *.lock
 
-# AI assistant instructions (not for end users)
+# AI assistant instructions
+# Note: CLAUDE.md is actually tracked in git (provides guidance to Claude Code)
+# .claude/ directory contains user-specific settings and should be ignored
 .claude.md
-CLAUDE.md
 
 # ⚠️ CRITICAL: Data and logs - NEVER REMOVE data/ FROM GITIGNORE
 # The data/ directory contains videos.db which must be preserved during updates

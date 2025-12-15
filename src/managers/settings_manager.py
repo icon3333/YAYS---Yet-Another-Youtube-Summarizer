@@ -185,13 +185,24 @@ class SettingsManager:
                 'min': 10,
                 'max': 3600,
                 'description': 'Maximum delay (seconds) for exponential backoff when rate limited'
+            },
+            'LOG_RETENTION_DAYS': {
+                'type': 'integer',
+                'required': False,
+                'default': '7',
+                'min': 1,
+                'max': 30,
+                'description': 'Automatically delete logs older than this many days'
             }
         }
 
     def _mask_secret(self, value: str) -> str:
         """Mask sensitive values for display."""
-        if not value:
+        if not value or not isinstance(value, str):
             return ''
+
+        # Ensure value is stripped of whitespace
+        value = value.strip()
 
         if value.startswith('sk-'):
             # OpenAI/API key: sk-***...***xxx

@@ -1259,6 +1259,8 @@
                 loadSettings();
             } else if (tabName === 'ai') {
                 loadAITab();
+            } else if (tabName === 'logs') {
+                loadLogsTab();
             }
 
             // Generate TOC for the new tab (after content is visible)
@@ -1463,6 +1465,13 @@
                 document.getElementById('USE_SUMMARY_LENGTH').checked = config.USE_SUMMARY_LENGTH === 'true';
                 document.getElementById('SKIP_SHORTS').checked = config.SKIP_SHORTS === 'true';
 
+                // Load log retention days
+                const logRetentionDays = data.env['LOG_RETENTION_DAYS']?.value || '7';
+                const logRetentionInput = document.getElementById('logRetentionDays');
+                if (logRetentionInput) {
+                    logRetentionInput.value = logRetentionDays;
+                }
+
                 // Toggle summary length input visibility
                 toggleSummaryLengthInput();
 
@@ -1507,7 +1516,6 @@
 
         async function saveAllSettings(buttonElement) {
             const button = buttonElement;
-            console.log('🔍 DEBUG: saveAllSettings called with button:', button);
 
             try {
                 const settingsToSave = {};
@@ -1586,6 +1594,38 @@
                     }, 3000);
                 }
                 console.error(error);
+            }
+        }
+
+        // Save logging settings
+        async function saveLoggingSettings() {
+            const retentionDays = parseInt(document.getElementById('logRetentionDays').value);
+
+            // Validate
+            if (retentionDays < 1 || retentionDays > 30) {
+                showStatus('Log retention must be between 1 and 30 days', true);
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/settings', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        settings: {
+                            LOG_RETENTION_DAYS: retentionDays.toString()
+                        }
+                    })
+                });
+
+                if (response.ok) {
+                    hideUnsavedIndicator('logging');
+                    showStatus('Logging settings saved successfully', false);
+                } else {
+                    throw new Error('Failed to save settings');
+                }
+            } catch (error) {
+                showStatus('Failed to save logging settings', true);
             }
         }
 
@@ -3193,3 +3233,156 @@ Transcript: {transcript}`;
                 closeMobileTOC();
             }
         });
+
+        // ============================================================================
+        // LOGS TAB
+        // ============================================================================
+
+        // Global state
+        let currentLogSource = 'summarizer';
+        let logsAutoRefreshInterval = null;
+        let currentRawLogContent = '';
+
+        // Load logs tab
+        async function loadLogsTab() {
+            await loadLogs(currentLogSource);
+        }
+
+        // Load logs from API
+        async function loadLogs(logName) {
+            const viewer = document.getElementById('logViewer');
+            const info = document.getElementById('logInfo');
+
+            if (!viewer || !info) return;
+
+            try {
+                viewer.innerHTML = '<div class="log-loading">Loading logs...</div>';
+
+                const response = await fetch(`/api/logs/${logName}?lines=1000`);
+                if (!response.ok) {
+                    throw new Error('Failed to load logs');
+                }
+
+                const data = await response.json();
+                currentRawLogContent = data.content;
+
+                // Update info
+                const sizeKB = (data.file_size_bytes / 1024).toFixed(1);
+                info.textContent = `Showing ${data.returned_lines} of ${data.total_lines} lines (${sizeKB} KB)`;
+
+                // Display logs with filters applied
+                applyLogFilters();
+
+                // Auto-scroll to bottom
+                viewer.scrollTop = viewer.scrollHeight;
+
+            } catch (error) {
+                viewer.innerHTML = '<div class="log-empty">Failed to load logs</div>';
+                showStatus('Failed to load logs', true);
+                console.error(error);
+            }
+        }
+
+        // Toggle between web/summarizer logs
+        function toggleLogSource(logName) {
+            currentLogSource = logName;
+
+            // Update toggle buttons
+            document.querySelectorAll('.log-toggle-btn').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.log === logName);
+            });
+
+            loadLogs(logName);
+        }
+
+        // Apply filters and search
+        function applyLogFilters() {
+            const viewer = document.getElementById('logViewer');
+            const levelFilter = document.getElementById('logLevelFilter').value;
+            const searchQuery = document.getElementById('logSearch').value.trim().toLowerCase();
+
+            if (!currentRawLogContent) {
+                viewer.innerHTML = '<div class="log-empty">No logs available</div>';
+                return;
+            }
+
+            let lines = currentRawLogContent.split('\n');
+
+            // Filter by level
+            if (levelFilter !== 'all') {
+                const pattern = new RegExp(`\\[${levelFilter}\\]`, 'i');
+                lines = lines.filter(line => pattern.test(line));
+            }
+
+            // Filter by search
+            if (searchQuery) {
+                lines = lines.filter(line => line.toLowerCase().includes(searchQuery));
+            }
+
+            // Update display
+            if (lines.length === 0) {
+                viewer.innerHTML = '<div class="log-empty">No matching log lines</div>';
+            } else {
+                viewer.textContent = lines.join('\n');
+            }
+
+            // Update info
+            const info = document.getElementById('logInfo');
+            if (info) {
+                const totalLines = currentRawLogContent.split('\n').length;
+                info.textContent = `Showing ${lines.length} of ${totalLines} lines`;
+            }
+        }
+
+        // Clear search
+        function clearLogSearch() {
+            document.getElementById('logSearch').value = '';
+            applyLogFilters();
+        }
+
+        // Copy all logs to clipboard
+        async function copyAllLogs() {
+            if (!currentRawLogContent) {
+                showStatus('No logs available to copy', 'error');
+                return;
+            }
+
+            try {
+                await navigator.clipboard.writeText(currentRawLogContent);
+                showStatus('Logs copied to clipboard!', 'success');
+            } catch (err) {
+                console.error('Failed to copy logs:', err);
+                showStatus('Failed to copy logs to clipboard', 'error');
+            }
+        }
+
+        // Download logs
+        async function downloadLogs() {
+            const url = `/api/logs/${currentLogSource}/download`;
+            window.open(url, '_blank');
+        }
+
+        // Manual refresh logs
+        function manualRefreshLogs() {
+            loadLogs(currentLogSource);
+        }
+
+        // Toggle auto-refresh
+        function toggleAutoRefresh() {
+            const btn = document.getElementById('autoRefreshBtn');
+
+            if (logsAutoRefreshInterval) {
+                // Disable
+                clearInterval(logsAutoRefreshInterval);
+                logsAutoRefreshInterval = null;
+                btn.textContent = 'Auto-refresh: OFF';
+                btn.classList.remove('active');
+            } else {
+                // Enable
+                logsAutoRefreshInterval = setInterval(() => {
+                    loadLogs(currentLogSource);
+                }, 5000);
+                btn.textContent = 'Auto-refresh: ON';
+                btn.classList.add('active');
+            }
+        }
