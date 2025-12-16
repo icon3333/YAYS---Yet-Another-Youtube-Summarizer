@@ -16,7 +16,7 @@ jinja2==3.1.6               # Template engine for web UI
 python-multipart>=0.0.6     # Required for file upload endpoints
 
 # Utilities
-filelock==3.16.1            # Cross-platform file locking
+filelock==3.20.1            # Cross-platform file locking
 python-dotenv==1.0.1        # Environment variable management (optional)
 apscheduler>=3.10.0         # Background task scheduling
 beautifulsoup4>=4.12.0      # XML/HTML parsing for timedtext API
