@@ -137,7 +137,7 @@ Key implementation: `process_videos.py` (main loop) calls functions from `src/co
 - Key settings include:
   - **Secrets:** OPENAI_API_KEY, SMTP_PASS, SUPADATA_API_KEY
   - **Email:** TARGET_EMAIL, SMTP_USER
-  - **Configuration:** CHECK_INTERVAL_HOURS, SEND_EMAIL_SUMMARIES, OPENAI_MODEL, LOG_LEVEL
+  - **Configuration:** CHECK_INTERVAL_HOURS, SEND_EMAIL_SUMMARIES, OPENAI_MODEL, LOG_LEVEL, LOG_RETENTION_DAYS
   - **yt-dlp settings:** YTDLP_RATE_LIMIT, YTDLP_SLEEP_INTERVAL, YTDLP_RETRIES (and others)
 - **Security:** All values stored as plain text for simplicity in single-user homeserver setups
 
@@ -153,11 +153,16 @@ Key implementation: `process_videos.py` (main loop) calls functions from `src/co
 - `start_summarizer.sh`: Wrapper that runs process_videos.py every N hours
 
 ### Core Logic
-- `src/web/app.py`: FastAPI application (1820 lines, all endpoints)
+- `src/web/app.py`: FastAPI application (1994 lines, all endpoints)
 - `src/managers/database.py`: SQLite operations, schema initialization
 - `src/managers/settings_manager.py`: Settings persistence (plain text storage)
 - `src/core/transcript.py`: Transcript extraction with 4-method fallback
 - `src/core/email_sender.py`: SMTP email delivery with UTF-8 encoding support
+
+### Utilities
+- `src/utils/log_cleanup.py`: Automatic deletion of old log files based on retention policy
+- `src/utils/log_redactor.py`: Redacts sensitive data (API keys, passwords) from log output before serving
+- `src/utils/tail_reader.py`: Efficient tail-based file reading for paginated log viewing
 
 ### Configuration
 - `docker-compose.yml`: Service definitions, volume mounts (CRITICAL: `./data` bind mount preserves database)
@@ -294,6 +299,13 @@ No formal test suite. Manual testing via:
 - Database modules have `if __name__ == '__main__':` blocks for testing
 
 ## Recent Improvements
+
+### Logs Viewer & Log Management (commit: b8c7a9e)
+- Added in-browser log viewer with tail-based pagination for large log files
+- 3 new API endpoints: `GET /api/logs/list`, `GET /api/logs/{log_name}`, `GET /api/logs/{log_name}/download`
+- Sensitive data (API keys, passwords, emails) automatically redacted before serving logs
+- Automatic old log cleanup based on `LOG_RETENTION_DAYS` setting (default: 30 days)
+- New utilities: `log_cleanup.py`, `log_redactor.py`, `tail_reader.py`
 
 ### Email Encoding Fix (commit: df928e3)
 - Added UTF-8 encoding support for email subject lines using `email.header.Header`
