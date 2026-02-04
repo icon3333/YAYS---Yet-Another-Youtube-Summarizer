@@ -9,9 +9,9 @@ supadata>=1.0.0             # Supadata.ai managed transcript API service
 openai>=1.54.0              # OpenAI GPT API client
 
 # Web framework
-fastapi==0.115.5            # Modern web framework
-uvicorn[standard]==0.32.1   # ASGI server with WebSockets support
-pydantic==2.10.3            # Data validation
+fastapi==0.128.0            # Modern web framework
+uvicorn[standard]==0.40.0   # ASGI server with WebSockets support
+pydantic==2.12.5            # Data validation (>=2.12 required for Python 3.14)
 jinja2==3.1.6               # Template engine for web UI
 python-multipart>=0.0.6     # Required for file upload endpoints
 

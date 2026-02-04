@@ -23,9 +23,6 @@ COPY src/ ./src/
 COPY process_videos.py .
 COPY start_summarizer.py .
 
-HEALTHCHECK --interval=5m --timeout=10s --start-period=30s --retries=3 \
-    CMD ["python", "-c", "import sys; sys.exit(0)"]
-
 ENTRYPOINT ["python", "start_summarizer.py"]
 
 # Stage 3: Web service (distroless — no shell)
@@ -40,8 +37,5 @@ COPY main.py .
 COPY process_videos.py .
 
 EXPOSE 8000
-
-HEALTHCHECK --interval=30s --timeout=10s --start-period=20s --retries=3 \
-    CMD ["python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
 
 ENTRYPOINT ["python", "main.py"]
