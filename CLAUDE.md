@@ -67,7 +67,7 @@ sqlite3 data/videos.db "SELECT key, value FROM settings WHERE type='secret';"
 
 ### Multi-Container Design
 - **Web container** (`youtube-web`): FastAPI server, serves UI at port 8015, manages settings
-- **Summarizer container** (`youtube-summarizer`): Runs `start_summarizer.sh` in infinite loop, dynamically reads check interval from database
+- **Summarizer container** (`youtube-summarizer`): Runs `start_summarizer.py` (Python, via ENTRYPOINT) in infinite loop, dynamically reads check interval from database
 - **Shared state**: Both containers mount `./data/videos.db` for persistence
 - **Dynamic configuration**: Check interval is read from database before each processing run (configurable 1-24 hours via Web UI)
 
@@ -150,7 +150,7 @@ Key implementation: `process_videos.py` (main loop) calls functions from `src/co
 ### Entry Points
 - `main.py`: Starts FastAPI web server (uvicorn)
 - `process_videos.py`: Main video processing loop
-- `start_summarizer.sh`: Wrapper that runs process_videos.py every N hours
+- `start_summarizer.py`: Python wrapper that runs process_videos.py every N hours (replaces former bash script)
 
 ### Core Logic
 - `src/web/app.py`: FastAPI application (1994 lines, all endpoints)
@@ -320,7 +320,7 @@ No formal test suite. Manual testing via:
 ### Check Interval Backend Setting (commits: c5f7bfb, 77cf3d6)
 - Fixed check interval to properly read from database settings
 - Removed hardcoded environment variable from docker-compose.yml
-- `start_summarizer.sh` now dynamically reads `CHECK_INTERVAL_HOURS` from database before each run
+- `start_summarizer.py` now dynamically reads `CHECK_INTERVAL_HOURS` from database before each run
 - Changes via Web UI take effect on next processing cycle (no restart required)
 
 ### Deprecated File Cleanup (commit: 053ed57)

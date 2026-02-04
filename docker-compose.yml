@@ -30,7 +30,7 @@ services:
     networks:
       - youtube-net
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -78,7 +78,7 @@ services:
       - SMTP_PASS=${SMTP_PASS:-}
       # Optional settings
       # Note: CHECK_INTERVAL_HOURS is read from database settings (set via Web UI)
-      # The start_summarizer.sh script dynamically reads it on each run
+      # start_summarizer.py dynamically reads it on each run
       - LOG_LEVEL=${LOG_LEVEL:-INFO}
       - MAX_PROCESSED_ENTRIES=${MAX_PROCESSED_ENTRIES:-10000}
     networks:

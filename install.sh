@@ -216,11 +216,11 @@ start_containers() {
     # ⚠️ CRITICAL: Database preservation
     # The mkdir -p command ONLY creates directories if they don't exist
     # It will NEVER delete or modify existing data/videos.db
-    # Docker container runs as UID 1000 (appuser), so we need to ensure these directories are writable
+    # Docker container runs as UID 65532 (nonroot, Chainguard), so we need to ensure these directories are writable
     print_info "Setting up data directories..."
     mkdir -p data logs
 
-    # Set permissions to allow container user (UID 1000) to write
+    # Set permissions to allow container user (UID 65532) to write
     # 777 is safe here as these are local bind mounts on homeserver
     chmod 777 data logs 2>/dev/null || true
 
