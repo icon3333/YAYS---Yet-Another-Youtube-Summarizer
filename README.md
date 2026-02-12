@@ -4,8 +4,7 @@
 
 YAYS monitors your favorite YouTube channels, pulls transcripts, runs them through AI, and drops clean summaries straight into your inbox or RSS reader. Set it up once, forget about it.
 
-<!-- TODO: Add screenshot of Feed view -->
-<!-- ![Feed view](docs/screenshots/feed.png) -->
+![Feed view](docs/screenshots/feed.png)
 
 **What you get:**
 - 🤖 AI summaries via OpenAI (pick your model)
@@ -15,8 +14,7 @@ YAYS monitors your favorite YouTube channels, pulls transcripts, runs them throu
 - 💾 Import/export your data
 - 🚀 One-command install, one-command update
 
-<!-- TODO: Add screenshot of Channels view -->
-<!-- ![Channels view](docs/screenshots/channels.png) -->
+![Channels view](docs/screenshots/channels.png)
 
 ---
 
@@ -29,6 +27,8 @@ docker compose up -d
 ```
 
 Open http://localhost:8015, head to **Settings**, plug in your API key and email — done.
+
+![Settings view](docs/screenshots/settings.png)
 
 ## Update
 
@@ -48,6 +48,8 @@ Pulls code, rebuilds containers, restarts everything.
 - [OpenAI API key](https://platform.openai.com/api-keys)
 - A target email address (inbox or RSS reader's email-in address)
 - [Gmail app password](https://myaccount.google.com/security) for SMTP
+
+![AI configuration](docs/screenshots/ai.png)
 
 ### Transcript Extraction
 
