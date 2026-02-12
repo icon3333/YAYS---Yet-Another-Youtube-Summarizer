@@ -4,8 +4,6 @@
 
 YAYS monitors your favorite YouTube channels, pulls transcripts, runs them through AI, and drops clean summaries straight into your inbox or RSS reader. Set it up once, forget about it.
 
-![Feed view](docs/screenshots/feed.png)
-
 **What you get:**
 - 🤖 AI summaries via OpenAI (pick your model)
 - 📧 Summaries land in your inbox or RSS reader automatically
@@ -13,8 +11,6 @@ YAYS monitors your favorite YouTube channels, pulls transcripts, runs them throu
 - 🔄 Checks for new videos every 1–24 hours (you choose)
 - 💾 Import/export your data
 - 🚀 One-command install, one-command update
-
-![Channels view](docs/screenshots/channels.png)
 
 ---
 
@@ -27,8 +23,6 @@ docker compose up -d
 ```
 
 Open http://localhost:8015, head to **Settings**, plug in your API key and email — done.
-
-![Settings view](docs/screenshots/settings.png)
 
 ## Update
 
@@ -48,8 +42,6 @@ Pulls code, rebuilds containers, restarts everything.
 - [OpenAI API key](https://platform.openai.com/api-keys)
 - A target email address (inbox or RSS reader's email-in address)
 - [Gmail app password](https://myaccount.google.com/security) for SMTP
-
-![AI configuration](docs/screenshots/ai.png)
 
 ### Transcript Extraction
 
@@ -74,6 +66,28 @@ The first three work out of the box. To enable Supadata: get a key at [supadata.
 ```bash
 docker exec youtube-summarizer python process_videos.py
 ```
+
+---
+
+## Screenshots
+
+The feed shows processed videos with their summaries, email status, and transcript source.
+
+![Feed](docs/screenshots/feed.png)
+
+Manage your monitored channels with per-channel stats and quick actions.
+
+![Channels](docs/screenshots/channels.png)
+
+Configure your OpenAI API key, model, and custom prompt template.
+
+![AI](docs/screenshots/ai.png)
+
+Set up email delivery with SMTP credentials and test sending.
+
+![Settings](docs/screenshots/settings.png)
+
+---
 
 ### Credits
 
