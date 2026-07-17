@@ -25,7 +25,6 @@ STATUS_FAILED_EMAIL = 'failed_email'
 # FILE PATHS
 # ============================================================================
 
-CONFIG_FILE = 'config.txt'
 ENV_FILE = '.env'
 ENV_EXAMPLE_FILE = '.env.example'
 DATABASE_FILE = 'data/videos.db'

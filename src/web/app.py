@@ -940,7 +940,7 @@ async def reset_settings():
         # Reset prompt to default
         config_manager.reset_prompt_to_default()
 
-        # Reset all settings in config.txt to defaults
+        # Reset all database settings to defaults
         config_manager.reset_all_settings()
 
         logger.info("Settings and prompt reset complete")
@@ -1032,7 +1032,7 @@ async def reset_complete_app():
         # Reset prompt to default
         config_manager.reset_prompt_to_default()
 
-        # Reset all settings in config.txt to defaults
+        # Reset all database settings to defaults
         config_manager.reset_all_settings()
 
         logger.info(f"Complete reset: Deleted {video_count} videos, {channel_count} channels, reset settings and prompt")

@@ -1,6 +1,3 @@
-# Remove obsolete version field
-# version: '3.8'
-
 # YouTube Summarizer - Production Docker Compose Configuration
 # ==============================================================
 
@@ -16,8 +13,6 @@ services:
     ports:
       - "127.0.0.1:8015:8000"
     volumes:
-      # Shared config (read/write with locking)
-      - ./config.txt:/app/config.txt
       # Environment variables (persistent, created from .env.example if missing)
       - ./.env:/app/.env
       # ⚠️ CRITICAL: Database must be mounted for settings persistence
@@ -60,8 +55,6 @@ services:
     container_name: youtube-summarizer
     restart: always
     volumes:
-      # Shared config (read-only for safety, but can still read)
-      - ./config.txt:/app/config.txt
       # Environment variables (persistent, settings saved in Web UI)
       - ./.env:/app/.env
       # ⚠️ CRITICAL: Database preservation via bind mount

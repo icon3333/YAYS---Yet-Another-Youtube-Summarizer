@@ -74,8 +74,7 @@ sqlite3 data/videos.db "SELECT key, value FROM settings WHERE type='secret';"
 ### Key Design Patterns
 
 #### 1. Database-Centric Configuration
-All configuration is stored in SQLite (`data/videos.db`), not files:
-- **Deprecated:** `config.txt` (legacy, no longer used by application code)
+All configuration is stored in SQLite (`data/videos.db`):
 - **Current approach:** `settings` table with plain text storage
 - **Storage:** All settings (including API keys and passwords) stored unencrypted in database
 - **Security:** Designed for single-user homeserver setups (protect database file access)
@@ -100,7 +99,7 @@ Four methods tried sequentially until one succeeds (`src/core/transcript.py`):
 Failed attempts are cached in `transcript_cache` table to avoid redundant retries.
 
 #### 4. Process Isolation & Concurrency Safety
-- **File locking:** `src/utils/file_lock.py` prevents concurrent processing runs
+- **File locking:** `data/.processing.lock` prevents concurrent processing runs
 - **PID tracking:** `.processing.lock` file stores PID of active processor
 - **Stuck detection:** Heartbeat monitoring detects abandoned processes
 - **Single-writer model:** Only summarizer container writes videos; web container reads
@@ -166,7 +165,6 @@ Key implementation: `process_videos.py` (main loop) calls functions from `src/co
 
 ### Configuration
 - `docker-compose.yml`: Service definitions, volume mounts (CRITICAL: `./data` bind mount preserves database)
-  - **Note:** Still mounts `config.txt` for backward compatibility but application no longer uses it
 - `requirements.txt`: Python dependencies (encryption libraries removed)
 - `Dockerfile`: Multi-stage build (base → summarizer/web)
 
@@ -294,41 +292,9 @@ No formal migration system. To modify schema:
 
 ## Testing
 
-No formal test suite. Manual testing via:
-- `test_validation.py`: Validates input sanitization
+Focused regression checks:
+- `python3 -m unittest tests/test_repository_cleanup.py -v`
 - Database modules have `if __name__ == '__main__':` blocks for testing
-
-## Recent Improvements
-
-### Logs Viewer & Log Management (commit: b8c7a9e)
-- Added in-browser log viewer with tail-based pagination for large log files
-- 3 new API endpoints: `GET /api/logs/list`, `GET /api/logs/{log_name}`, `GET /api/logs/{log_name}/download`
-- Sensitive data (API keys, passwords, emails) automatically redacted before serving logs
-- Automatic old log cleanup based on `LOG_RETENTION_DAYS` setting (default: 30 days)
-- New utilities: `log_cleanup.py`, `log_redactor.py`, `tail_reader.py`
-
-### Email Encoding Fix (commit: df928e3)
-- Added UTF-8 encoding support for email subject lines using `email.header.Header`
-- Properly encodes video titles with international characters
-- Fixed encoding issues with emojis and special characters in subject lines
-
-### Gmail App Password Validation (commit: 8e2c1ef)
-- Enhanced validation for Gmail SMTP passwords
-- Enforces exactly 16 characters (Gmail app password format)
-- Improved error messaging for incorrect password format
-
-### Check Interval Backend Setting (commits: c5f7bfb, 77cf3d6)
-- Fixed check interval to properly read from database settings
-- Removed hardcoded environment variable from docker-compose.yml
-- `start_summarizer.py` now dynamically reads `CHECK_INTERVAL_HOURS` from database before each run
-- Changes via Web UI take effect on next processing cycle (no restart required)
-
-### Deprecated File Cleanup (commit: 053ed57)
-- Removed `src/utils/encryption.py` (encryption no longer used)
-- Removed `fix_channel_timestamps.py` (migration script no longer needed)
-- Removed `youtube-summarizer.service` (Docker-based deployment only)
-
-**Important:** While `config.txt` is still mounted in docker-compose.yml for backward compatibility, it is no longer used by the application. All configuration is now stored in the database `settings` table.
 
 ## Deployment Notes
 

@@ -17,12 +17,11 @@ class ConfigManager:
     No file operations - everything in SQLite!
     """
 
-    def __init__(self, config_path='config.txt', db_path='data/videos.db'):
+    def __init__(self, db_path='data/videos.db'):
         """
         Initialize ConfigManager.
 
         Args:
-            config_path: Unused, kept for backward compatibility
             db_path: Path to SQLite database
         """
         # Import here to avoid circular dependency
