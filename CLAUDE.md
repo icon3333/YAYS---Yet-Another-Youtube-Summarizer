@@ -99,9 +99,9 @@ Four methods tried sequentially until one succeeds (`src/core/transcript.py`):
 Failed attempts are cached in `transcript_cache` table to avoid redundant retries.
 
 #### 4. Process Isolation & Concurrency Safety
-- **File locking:** `data/.processing.lock` prevents concurrent processing runs
-- **PID tracking:** `.processing.lock` file stores PID of active processor
-- **Stuck detection:** Heartbeat monitoring detects abandoned processes
+- **Single-instance exclusion:** `data/.processor.pid` prevents concurrent processor instances and stores the active process ID
+- **Heartbeat:** `data/.processing.lock` records heartbeat timestamps used for stuck-process detection
+- **Stale-state cleanup:** PID liveness and heartbeat freshness distinguish active work from abandoned processing state
 - **Single-writer model:** Only summarizer container writes videos; web container reads
 
 ### Video Processing Pipeline
@@ -180,9 +180,10 @@ All settings stored as plain text in SQLite database:
 
 ### 2. Concurrency Safety
 Multiple safeguards prevent concurrent processing:
-- File-level lock: `data/.processing.lock` (via `filelock` library)
-- PID tracking: Lock file contains PID of active process
-- Stuck detection: If lock exists but PID is dead, cleanup and retry
+- Single-instance exclusion: `data/.processor.pid` stores the active process ID and is checked with `psutil`
+- PID cleanup: Invalid or dead process IDs are replaced when the processor starts
+- Heartbeat tracking: `data/.processing.lock` stores a timestamp refreshed during processing
+- Stuck-state detection: Heartbeat freshness prevents active work from being reset as abandoned
 
 ### 3. Video Deduplication
 Videos are deduplicated by ID:
@@ -275,7 +276,8 @@ No formal migration system. To modify schema:
 - Check docker logs for database errors
 
 ### "Videos stuck in 'processing' status"
-- Check for stale `.processing.lock` file
+- Inspect `data/.processing.lock` for a recent heartbeat timestamp; it does not contain a process ID
+- If the processor exits immediately, inspect `data/.processor.pid`, which controls single-instance exclusion
 - Restart summarizer container: `docker compose restart summarizer`
 - Check logs: `docker compose logs summarizer`
 

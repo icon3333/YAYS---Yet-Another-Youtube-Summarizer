@@ -29,6 +29,23 @@ class RepositoryCleanupTests(unittest.TestCase):
         self.assertFalse((ROOT / "yays_logo.png").exists())
         self.assertTrue((ROOT / "src/static/yays_logo.png").is_file())
 
+    def test_retired_config_rules_and_dependency_are_absent(self):
+        self.assertNotIn("config.txt", (ROOT / ".gitignore").read_text())
+        self.assertNotIn("filelock", (ROOT / "requirements.txt").read_text().lower())
+
+    def test_concurrency_docs_distinguish_pid_and_heartbeat_files(self):
+        documentation = (ROOT / "CLAUDE.md").read_text()
+
+        self.assertNotIn("filelock", documentation.lower())
+        self.assertIn(
+            "`data/.processor.pid` prevents concurrent processor instances and stores the active process ID",
+            documentation,
+        )
+        self.assertIn(
+            "`data/.processing.lock` records heartbeat timestamps used for stuck-process detection",
+            documentation,
+        )
+
 
 if __name__ == "__main__":
     unittest.main()
