@@ -7,9 +7,7 @@
 !.env.example
 .env.backup.*
 
-# Configuration (contains personal channel list)
-config.txt
-!config.txt.example
+# Lock files
 *.lock
 
 # AI assistant instructions

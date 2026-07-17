@@ -113,7 +113,6 @@ class ImportManager:
     def __init__(
         self,
         db_path: str = "data/videos.db",
-        config_path: str = "config.txt",  # Unused, kept for backward compatibility
         env_path: str = ".env",  # Unused, kept for backward compatibility
     ):
         """
@@ -121,7 +120,6 @@ class ImportManager:
 
         Args:
             db_path: Path to SQLite database
-            config_path: Unused, kept for backward compatibility
             env_path: Unused, kept for backward compatibility
         """
         self.db = VideoDatabase(db_path)
