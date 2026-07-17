@@ -1,0 +1,35 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  checks:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.11"
+
+      - name: Run repository cleanup tests
+        run: python3 -m unittest tests/test_repository_cleanup.py -v
+
+      - name: Compile Python sources and tests
+        run: python3 -m compileall -q main.py process_videos.py start_summarizer.py src tests
+
+      - name: Validate Docker Compose configuration
+        run: docker compose config -q
