@@ -92,5 +92,5 @@ jobs:
             yays-web:ci -m pip freeze --all > /tmp/yays-web-runtime.txt
           docker run --rm --network none --entrypoint /app/venv/bin/python \
             yays-summarizer:ci -m pip freeze --all > /tmp/yays-summarizer-runtime.txt
-          python3 -m pip_audit --strict --requirement /tmp/yays-web-runtime.txt
-          python3 -m pip_audit --strict --requirement /tmp/yays-summarizer-runtime.txt
+          python3 -m pip_audit --strict --no-deps --disable-pip --requirement /tmp/yays-web-runtime.txt
+          python3 -m pip_audit --strict --no-deps --disable-pip --requirement /tmp/yays-summarizer-runtime.txt

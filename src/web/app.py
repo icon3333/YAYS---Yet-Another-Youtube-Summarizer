@@ -25,21 +25,28 @@ import re
 from dotenv import load_dotenv
 from apscheduler.schedulers.background import BackgroundScheduler
 
-# Load environment variables from .env file
-# Create .env from .env.example if it doesn't exist
-if not os.path.exists('.env') and os.path.exists('.env.example'):
+# Load environment variables from an overridable file.
+# Create it from .env.example if it doesn't exist.
+ENV_FILE = Path(os.getenv("YAYS_ENV_FILE", ".env"))
+if not ENV_FILE.exists() and Path('.env.example').exists():
     import shutil
-    shutil.copy2('.env.example', '.env')
-    print("✅ Created .env from .env.example")
+    ENV_FILE.parent.mkdir(parents=True, exist_ok=True)
+    shutil.copy2('.env.example', ENV_FILE)
+    print(f"✅ Created {ENV_FILE} from .env.example")
 
-load_dotenv()
+load_dotenv(dotenv_path=ENV_FILE)
+
+# Resolve all persistent web state from two overridable roots. Relative defaults
+# preserve the existing production layout while tests and operators can isolate it.
+DATA_DIR = Path(os.getenv("YAYS_DATA_DIR", "data"))
+LOG_DIR = Path(os.getenv("YAYS_LOG_DIR", "logs"))
+DATABASE_PATH = DATA_DIR / "videos.db"
 
 # Setup logging with dynamic log level from environment
 from logging.handlers import RotatingFileHandler
 
 # Create logs directory if it doesn't exist
-log_dir = 'logs'
-os.makedirs(log_dir, exist_ok=True)
+LOG_DIR.mkdir(parents=True, exist_ok=True)
 
 log_level = os.getenv('LOG_LEVEL', 'INFO').upper()
 
@@ -59,7 +66,7 @@ root_logger.addHandler(console_handler)
 
 # File handler (shared logs directory)
 file_handler = RotatingFileHandler(
-    os.path.join(log_dir, 'web.log'),
+    LOG_DIR / 'web.log',
     maxBytes=10*1024*1024,  # 10MB
     backupCount=5,
     encoding='utf-8'
@@ -118,11 +125,11 @@ templates.env.auto_reload = True
 templates.env.cache = None
 
 # Initialize managers (all use database now!)
-config_manager = ConfigManager(db_path='data/videos.db')
-settings_manager = SettingsManager(db_path='data/videos.db')
-video_db = VideoDatabase('data/videos.db')
-export_manager = ExportManager(db_path='data/videos.db')
-import_manager = ImportManager(db_path='data/videos.db')
+config_manager = ConfigManager(db_path=str(DATABASE_PATH))
+settings_manager = SettingsManager(db_path=str(DATABASE_PATH))
+video_db = VideoDatabase(str(DATABASE_PATH))
+export_manager = ExportManager(db_path=str(DATABASE_PATH))
+import_manager = ImportManager(db_path=str(DATABASE_PATH))
 ytdlp_client = YTDLPClient()
 youtube_client = YouTubeClient(use_ytdlp=True)
 
@@ -1174,7 +1181,7 @@ async def get_video_logs(video_id: str, lines: int = 800, context: int = 3):
         if not video:
             raise HTTPException(status_code=404, detail="Video not found")
 
-        log_path = Path('logs') / 'summarizer.log'
+        log_path = LOG_DIR / 'summarizer.log'
         if not log_path.exists():
             return JSONResponse(
                 status_code=200,
@@ -1848,7 +1855,7 @@ async def list_logs():
     """List available log sources with metadata"""
     from datetime import datetime
 
-    logs_dir = Path('logs')
+    logs_dir = LOG_DIR
     logs_config = [
         {'name': 'web', 'display_name': 'Web Container', 'file': 'web.log'},
         {'name': 'summarizer', 'display_name': 'Summarizer Container', 'file': 'summarizer.log'}
@@ -1895,7 +1902,7 @@ async def get_logs(log_name: str, lines: int = 1000, offset: int = 0):
     lines = max(1, min(lines, 5000))
     offset = max(0, offset)
 
-    file_path = Path('logs') / f'{log_name}.log'
+    file_path = LOG_DIR / f'{log_name}.log'
 
     if not file_path.exists():
         return {
@@ -1947,7 +1954,7 @@ async def download_logs(log_name: str):
     if log_name not in valid_logs:
         raise HTTPException(400, f"Invalid log name: {log_name}")
 
-    file_path = Path('logs') / f'{log_name}.log'
+    file_path = LOG_DIR / f'{log_name}.log'
 
     if not file_path.exists():
         raise HTTPException(404, f"Log file not found: {file_path}")

@@ -1,3 +1,5 @@
+import os
+import tempfile
 import unittest
 import warnings
 from pathlib import Path
@@ -14,10 +16,128 @@ else:
 
 from fastapi.testclient import TestClient
 
-from src.web import app as web_app
-
-
 ROOT = Path(__file__).resolve().parents[1]
+
+
+def snapshot_tree(path: Path):
+    if not path.exists():
+        return None
+
+    snapshot = {}
+    for file_path in sorted(item for item in path.rglob("*") if item.is_file()):
+        stat = file_path.stat()
+        snapshot[str(file_path.relative_to(path))] = (
+            stat.st_size,
+            stat.st_mtime_ns,
+        )
+    return snapshot
+
+
+REPOSITORY_STATE_BEFORE_IMPORT = {
+    "data": snapshot_tree(ROOT / "data"),
+    "logs": snapshot_tree(ROOT / "logs"),
+}
+TEST_STATE = tempfile.TemporaryDirectory(prefix="yays-fastapi-contracts-")
+TEST_DATA_DIR = Path(TEST_STATE.name) / "data"
+TEST_LOG_DIR = Path(TEST_STATE.name) / "logs"
+TEST_ENV_FILE = Path(TEST_STATE.name) / "isolated.env"
+TEST_DOTENV_VARIABLE = "YAYS_FASTAPI_TEST_ENV"
+TEST_ENV_FILE.write_text(f"{TEST_DOTENV_VARIABLE}=isolated\n", encoding="utf-8")
+TEST_ENVIRONMENT = {
+    "YAYS_DATA_DIR": str(TEST_DATA_DIR),
+    "YAYS_LOG_DIR": str(TEST_LOG_DIR),
+    "YAYS_ENV_FILE": str(TEST_ENV_FILE),
+}
+ORIGINAL_ENVIRONMENT = {
+    name: os.environ.get(name) for name in (*TEST_ENVIRONMENT, TEST_DOTENV_VARIABLE)
+}
+os.environ.pop(TEST_DOTENV_VARIABLE, None)
+os.environ.update(TEST_ENVIRONMENT)
+
+try:
+    from src.web import app as web_app
+except BaseException:
+    for name, original_value in ORIGINAL_ENVIRONMENT.items():
+        if original_value is None:
+            os.environ.pop(name, None)
+        else:
+            os.environ[name] = original_value
+    TEST_STATE.cleanup()
+    raise
+
+
+def cleanup_test_environment():
+    try:
+        state_after_tests = {
+            "data": snapshot_tree(ROOT / "data"),
+            "logs": snapshot_tree(ROOT / "logs"),
+        }
+        if state_after_tests != REPOSITORY_STATE_BEFORE_IMPORT:
+            raise AssertionError("FastAPI contract tests mutated repository data or logs")
+    finally:
+        for handler in (web_app.file_handler, web_app.console_handler):
+            web_app.root_logger.removeHandler(handler)
+            handler.close()
+        for name, original_value in ORIGINAL_ENVIRONMENT.items():
+            if original_value is None:
+                os.environ.pop(name, None)
+            else:
+                os.environ[name] = original_value
+        TEST_STATE.cleanup()
+
+
+unittest.addModuleCleanup(cleanup_test_environment)
+
+
+class FastAPIImportIsolationTests(unittest.TestCase):
+    def test_environment_paths_isolate_all_import_time_state(self):
+        self.assertTrue(
+            all(
+                hasattr(web_app, name)
+                for name in ("DATA_DIR", "LOG_DIR", "ENV_FILE")
+            ),
+            "the web app must expose its resolved state roots",
+        )
+        self.assertEqual(web_app.DATA_DIR, TEST_DATA_DIR)
+        self.assertEqual(web_app.LOG_DIR, TEST_LOG_DIR)
+        self.assertEqual(web_app.ENV_FILE, TEST_ENV_FILE)
+        self.assertEqual(web_app.DATABASE_PATH, TEST_DATA_DIR / "videos.db")
+        self.assertEqual(os.environ[TEST_DOTENV_VARIABLE], "isolated")
+        self.assertTrue(web_app.DATABASE_PATH.is_file())
+        self.assertTrue((TEST_LOG_DIR / "web.log").is_file())
+
+        manager_databases = (
+            web_app.config_manager.db.db_path,
+            web_app.settings_manager.db.db_path,
+            web_app.video_db.db_path,
+            web_app.export_manager.db.db_path,
+            web_app.import_manager.db.db_path,
+        )
+        self.assertTrue(
+            all(Path(database) == web_app.DATABASE_PATH for database in manager_databases)
+        )
+
+    def test_repository_database_and_logs_are_unchanged_after_import(self):
+        self.assertEqual(
+            {
+                "data": snapshot_tree(ROOT / "data"),
+                "logs": snapshot_tree(ROOT / "logs"),
+            },
+            REPOSITORY_STATE_BEFORE_IMPORT,
+        )
+
+    def test_log_listing_uses_the_isolated_log_root(self):
+        self.assertTrue(
+            TEST_LOG_DIR.is_dir(), "the configured log root must be created at import"
+        )
+        (TEST_LOG_DIR / "summarizer.log").write_text("isolated\n", encoding="utf-8")
+
+        response = TestClient(web_app.app).get("/api/logs/list")
+
+        self.assertEqual(response.status_code, 200)
+        paths = {item["name"]: item["file_path"] for item in response.json()["logs"]}
+        self.assertEqual(paths["web"], str(TEST_LOG_DIR / "web.log"))
+        self.assertEqual(paths["summarizer"], str(TEST_LOG_DIR / "summarizer.log"))
 
 
 class FastAPIApplicationContractTests(unittest.TestCase):
@@ -150,6 +270,11 @@ class BackendDependencyPolicyTests(unittest.TestCase):
         self.assertIn("-m pip freeze --all", workflow)
         self.assertIn("yays-web:ci", workflow)
         self.assertIn("yays-summarizer:ci", workflow)
+
+        exact_inventory_audit = (
+            "python3 -m pip_audit --strict --no-deps --disable-pip --requirement"
+        )
+        self.assertEqual(workflow.count(exact_inventory_audit), 2)
 
     def test_starlette_test_client_fallback_warning_is_promoted_to_an_error(self):
         test_module = (ROOT / "tests/test_fastapi_contracts.py").read_text(
