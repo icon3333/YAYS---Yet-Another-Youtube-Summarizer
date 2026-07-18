@@ -33,10 +33,15 @@ jobs:
           python-version: ${{ matrix.python-version }}
 
       - name: Install dependencies
-        run: python3 -m pip install -r requirements.txt
+        run: |
+          python3 -m pip install --upgrade pip==26.1.2 setuptools==83.0.0
+          python3 -m pip install -r requirements-dev.txt
 
       - name: Run tests
         run: python3 -m unittest discover -s tests -v
+
+      - name: Audit installed dependencies
+        run: python3 -m pip_audit --strict
 
       - name: Compile Python sources and tests
         run: python3 -m compileall -q main.py process_videos.py start_summarizer.py src tests
@@ -55,6 +60,16 @@ jobs:
         with:
           persist-credentials: false
 
+      - name: Set up audit tooling
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.14"
+
+      - name: Install audit tooling
+        run: |
+          python3 -m pip install --upgrade pip==26.1.2
+          python3 -m pip install pip-audit==2.10.1
+
       - name: Build runtime targets
         run: |
           docker build --target web --tag yays-web:ci .
@@ -70,3 +85,12 @@ jobs:
             --entrypoint /app/venv/bin/python \
             --volume "$PWD/tests/container_runtime_smoke.py:/tmp/container_runtime_smoke.py:ro" \
             yays-summarizer:ci /tmp/container_runtime_smoke.py
+
+      - name: Audit resolved runtime environments
+        run: |
+          docker run --rm --network none --entrypoint /app/venv/bin/python \
+            yays-web:ci -m pip freeze --all > /tmp/yays-web-runtime.txt
+          docker run --rm --network none --entrypoint /app/venv/bin/python \
+            yays-summarizer:ci -m pip freeze --all > /tmp/yays-summarizer-runtime.txt
+          python3 -m pip_audit --strict --requirement /tmp/yays-web-runtime.txt
+          python3 -m pip_audit --strict --requirement /tmp/yays-summarizer-runtime.txt

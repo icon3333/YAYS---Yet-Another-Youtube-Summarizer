@@ -207,7 +207,7 @@ class ChannelUpdate(BaseModel):
 @app.get("/", response_class=HTMLResponse)
 async def home(request: Request):
     """Serve the main web interface"""
-    return templates.TemplateResponse("index.html", {"request": request})
+    return templates.TemplateResponse(request, "index.html")
 
 
 

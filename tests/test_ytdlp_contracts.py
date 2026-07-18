@@ -194,6 +194,9 @@ class YTDLPRuntimeContractTests(unittest.TestCase):
     def test_distroless_targets_receive_the_builder_virtualenv(self):
         dockerfile = (ROOT / "Dockerfile").read_text(encoding="utf-8")
 
+        self.assertIn(
+            "RUN pip install --no-cache-dir --upgrade pip==26.1.2", dockerfile
+        )
         self.assertIn("RUN pip install --no-cache-dir -r requirements.txt", dockerfile)
         self.assertEqual(
             dockerfile.count("COPY --from=builder /app/venv /app/venv"), 2
@@ -205,7 +208,7 @@ class YTDLPRuntimeContractTests(unittest.TestCase):
     def test_ci_installs_dependencies_and_runs_all_contract_tests(self):
         workflow = (ROOT / ".github/workflows/ci.yml").read_text(encoding="utf-8")
 
-        self.assertIn("python3 -m pip install -r requirements.txt", workflow)
+        self.assertIn("python3 -m pip install -r requirements-dev.txt", workflow)
         self.assertIn("python3 -m unittest discover -s tests -v", workflow)
 
 
