@@ -32,11 +32,41 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
-      - name: Run repository cleanup tests
-        run: python3 -m unittest tests/test_repository_cleanup.py -v
+      - name: Install dependencies
+        run: python3 -m pip install -r requirements.txt
+
+      - name: Run tests
+        run: python3 -m unittest discover -s tests -v
 
       - name: Compile Python sources and tests
         run: python3 -m compileall -q main.py process_videos.py start_summarizer.py src tests
 
       - name: Validate Docker Compose configuration
         run: docker compose config -q
+
+  container-runtime:
+    name: Container runtime smoke
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+
+      - name: Build runtime targets
+        run: |
+          docker build --target web --tag yays-web:ci .
+          docker build --target summarizer --tag yays-summarizer:ci .
+
+      - name: Smoke test runtime targets
+        run: |
+          docker run --rm --network none \
+            --entrypoint /app/venv/bin/python \
+            --volume "$PWD/tests/container_runtime_smoke.py:/tmp/container_runtime_smoke.py:ro" \
+            yays-web:ci /tmp/container_runtime_smoke.py
+          docker run --rm --network none \
+            --entrypoint /app/venv/bin/python \
+            --volume "$PWD/tests/container_runtime_smoke.py:/tmp/container_runtime_smoke.py:ro" \
+            yays-summarizer:ci /tmp/container_runtime_smoke.py
