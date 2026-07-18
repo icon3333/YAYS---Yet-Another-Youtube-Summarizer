@@ -1,3 +1,4 @@
+import inspect
 import unittest
 from pathlib import Path
 from unittest.mock import MagicMock, patch
@@ -5,6 +6,7 @@ from unittest.mock import MagicMock, patch
 import yt_dlp
 
 from src.core.transcript import TranscriptExtractor
+from src.core.youtube import YouTubeClient
 from src.core.ytdlp_client import YTDLPClient
 
 
@@ -175,6 +177,27 @@ class YTDLPExtractionContractTests(unittest.TestCase):
         self.assertTrue(options["writesubtitles"])
         self.assertTrue(options["writeautomaticsub"])
         self.assertEqual(options["subtitleslangs"], ["en"])
+
+
+class YTDLPConstructionContractTests(unittest.TestCase):
+    def test_settings_database_path_is_injectable_with_the_existing_default(self):
+        self.assertIn("db_path", inspect.signature(YTDLPClient).parameters)
+
+        with patch.object(YTDLPClient, "_load_settings", return_value={}):
+            default_client = YTDLPClient()
+            isolated_client = YTDLPClient(db_path="/tmp/yays-isolated.db")
+
+        self.assertEqual(default_client.db_path, "data/videos.db")
+        self.assertEqual(isolated_client.db_path, "/tmp/yays-isolated.db")
+
+    def test_youtube_client_reuses_an_injected_ytdlp_client(self):
+        self.assertIn("ytdlp_client", inspect.signature(YouTubeClient).parameters)
+        injected_client = MagicMock(spec=YTDLPClient)
+
+        client = YouTubeClient(use_ytdlp=True, ytdlp_client=injected_client)
+
+        self.assertTrue(client.use_ytdlp)
+        self.assertIs(client.ytdlp, injected_client)
 
 
 class YTDLPRuntimeContractTests(unittest.TestCase):

@@ -23,12 +23,16 @@ logger = logging.getLogger(__name__)
 class YouTubeClient:
     """Client for YouTube channel and video operations"""
 
-    def __init__(self, use_ytdlp: bool = True):
+    def __init__(
+        self,
+        use_ytdlp: bool = True,
+        ytdlp_client: Optional["YTDLPClient"] = None,
+    ):
         """Initialize client with yt-dlp or RSS fallback"""
         self.use_ytdlp = use_ytdlp and YTDLP_AVAILABLE
 
         if self.use_ytdlp:
-            self.ytdlp = YTDLPClient()
+            self.ytdlp = ytdlp_client if ytdlp_client is not None else YTDLPClient()
             logger.info("YouTubeClient initialized with yt-dlp discovery support")
         else:
             if use_ytdlp and not YTDLP_AVAILABLE:

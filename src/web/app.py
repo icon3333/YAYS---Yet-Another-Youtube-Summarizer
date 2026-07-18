@@ -130,8 +130,8 @@ settings_manager = SettingsManager(db_path=str(DATABASE_PATH))
 video_db = VideoDatabase(str(DATABASE_PATH))
 export_manager = ExportManager(db_path=str(DATABASE_PATH))
 import_manager = ImportManager(db_path=str(DATABASE_PATH))
-ytdlp_client = YTDLPClient()
-youtube_client = YouTubeClient(use_ytdlp=True)
+ytdlp_client = YTDLPClient(db_path=str(DATABASE_PATH))
+youtube_client = YouTubeClient(use_ytdlp=True, ytdlp_client=ytdlp_client)
 
 # Initialize background scheduler
 scheduler = BackgroundScheduler()

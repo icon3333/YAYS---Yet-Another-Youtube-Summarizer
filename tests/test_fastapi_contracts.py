@@ -116,6 +116,12 @@ class FastAPIImportIsolationTests(unittest.TestCase):
         self.assertTrue(
             all(Path(database) == web_app.DATABASE_PATH for database in manager_databases)
         )
+        self.assertTrue(
+            hasattr(web_app.ytdlp_client, "db_path"),
+            "the app-level yt-dlp client must expose its injected settings database",
+        )
+        self.assertEqual(Path(web_app.ytdlp_client.db_path), web_app.DATABASE_PATH)
+        self.assertIs(web_app.youtube_client.ytdlp, web_app.ytdlp_client)
 
     def test_repository_database_and_logs_are_unchanged_after_import(self):
         self.assertEqual(
