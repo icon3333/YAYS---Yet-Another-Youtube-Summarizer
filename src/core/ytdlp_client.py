@@ -163,7 +163,6 @@ class YTDLPClient:
             self.ydl_opts['sleep_interval_requests'] = self.sleep_requests
 
         if self.concurrent_fragments:
-            self.ydl_opts['concurrent_fragments'] = self.concurrent_fragments
             self.ydl_opts['concurrent_fragment_downloads'] = self.concurrent_fragments
 
     # =============

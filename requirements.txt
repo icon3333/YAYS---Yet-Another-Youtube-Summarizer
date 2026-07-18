@@ -3,7 +3,7 @@
 
 # Core dependencies
 feedparser==6.0.11          # RSS feed parsing (fallback)
-yt-dlp==2024.10.7           # YouTube channel discovery & metadata (no downloads)
+yt-dlp[default,deno]==2026.6.9  # YouTube extraction with matching EJS and Deno runtime
 youtube-transcript-api==1.2.3  # Transcript extraction via YouTube Data API
 supadata>=1.0.0             # Supadata.ai managed transcript API service
 openai>=1.54.0              # OpenAI GPT API client
