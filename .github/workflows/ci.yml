@@ -62,11 +62,11 @@ jobs:
 
       - name: Smoke test runtime targets
         run: |
-          docker run --rm \
+          docker run --rm --network none \
             --entrypoint /app/venv/bin/python \
             --volume "$PWD/tests/container_runtime_smoke.py:/tmp/container_runtime_smoke.py:ro" \
             yays-web:ci /tmp/container_runtime_smoke.py
-          docker run --rm \
+          docker run --rm --network none \
             --entrypoint /app/venv/bin/python \
             --volume "$PWD/tests/container_runtime_smoke.py:/tmp/container_runtime_smoke.py:ro" \
             yays-summarizer:ci /tmp/container_runtime_smoke.py

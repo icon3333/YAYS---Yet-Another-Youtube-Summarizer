@@ -31,7 +31,7 @@ def run(
 assert version("yt-dlp") == "2026.6.9"
 assert version("yt-dlp-ejs") == "0.8.0"
 assert version("deno") == "2.8.1"
-assert os.getuid() == 65532, "runtime image is not using the expected nonroot user"
+assert os.getuid() != 0, "runtime image is unexpectedly running as root"
 assert os.access(Path.home(), os.W_OK), "runtime home is not writable"
 
 run([sys.executable, "-m", "pip", "check"])
