@@ -41,8 +41,9 @@ class YTDLPClient:
         'noprogress': True,
     }
 
-    def __init__(self):
+    def __init__(self, db_path: str = "data/videos.db"):
         """Initialize yt-dlp client"""
+        self.db_path = db_path
         self.settings = self._load_settings()
         self.ydl_opts = self.DEFAULT_OPTIONS.copy()
 
@@ -87,7 +88,7 @@ class YTDLPClient:
     def _load_settings(self) -> Dict[str, Dict[str, Any]]:
         """Load yt-dlp-related settings from the database."""
         try:
-            manager = SettingsManager(db_path='data/videos.db')
+            manager = SettingsManager(db_path=self.db_path)
             return manager.get_all_settings(mask_secrets=False)
         except Exception as exc:
             logger.warning(f"Failed to load yt-dlp settings from database: {exc}")

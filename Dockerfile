@@ -10,6 +10,7 @@ USER root
 RUN python -m venv /app/venv
 ENV PATH="/app/venv/bin:$PATH"
 COPY requirements.txt .
+RUN pip install --no-cache-dir --upgrade pip==26.1.2
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Stage 2: Summarizer service (distroless — no shell)

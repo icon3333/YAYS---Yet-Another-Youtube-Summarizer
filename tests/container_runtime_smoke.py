@@ -1,6 +1,6 @@
-"""Exercise the yt-dlp JavaScript stack inside the final runtime image."""
+"""Exercise security-critical dependencies and yt-dlp inside the runtime image."""
 
-from importlib.metadata import version
+from importlib.metadata import PackageNotFoundError, version
 import os
 from pathlib import Path
 import shutil
@@ -31,6 +31,15 @@ def run(
 assert version("yt-dlp") == "2026.6.9"
 assert version("yt-dlp-ejs") == "0.8.0"
 assert version("deno") == "2.8.1"
+assert version("fastapi") == "0.135.1"
+assert version("starlette") == "1.3.1"
+assert version("pip") == "26.1.2"
+try:
+    setuptools_version = version("setuptools")
+except PackageNotFoundError:
+    pass
+else:
+    assert int(setuptools_version.partition(".")[0]) >= 83
 assert os.getuid() != 0, "runtime image is unexpectedly running as root"
 assert os.access(Path.home(), os.W_OK), "runtime home is not writable"
 
