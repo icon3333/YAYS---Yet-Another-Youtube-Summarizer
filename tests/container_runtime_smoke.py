@@ -28,18 +28,19 @@ def run(
     return output
 
 
-assert version("yt-dlp") == "2026.6.9"
+assert sys.version_info[:2] == (3, 14), "runtime must stay on supported Python 3.14"
+assert version("yt-dlp") == "2026.7.4"
 assert version("yt-dlp-ejs") == "0.8.0"
-assert version("deno") == "2.8.1"
+assert version("deno") == "2.8.3"
 assert version("fastapi") == "0.135.1"
 assert version("starlette") == "1.3.1"
-assert version("pip") == "26.1.2"
+assert version("pip") == "26.2.2"
 try:
     setuptools_version = version("setuptools")
 except PackageNotFoundError:
     pass
 else:
-    assert int(setuptools_version.partition(".")[0]) >= 83
+    assert tuple(map(int, setuptools_version.split(".")[:2])) >= (84, 1)
 assert os.getuid() != 0, "runtime image is unexpectedly running as root"
 assert os.access(Path.home(), os.W_OK), "runtime home is not writable"
 
