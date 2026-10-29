@@ -211,14 +211,14 @@ class YTDLPRuntimeContractTests(unittest.TestCase):
     def test_requirements_install_the_pinned_official_ejs_and_deno_extras(self):
         requirements = (ROOT / "requirements.txt").read_text(encoding="utf-8")
 
-        self.assertIn("yt-dlp[default,deno,pin-deno]==2026.6.9", requirements)
+        self.assertIn("yt-dlp[default,deno,pin-deno]==2026.7.4", requirements)
         self.assertNotIn("yt-dlp==2024.10.7", requirements)
 
     def test_distroless_targets_receive_the_builder_virtualenv(self):
         dockerfile = (ROOT / "Dockerfile").read_text(encoding="utf-8")
 
         self.assertIn(
-            "RUN pip install --no-cache-dir --upgrade pip==26.1.2", dockerfile
+            "RUN pip install --no-cache-dir --upgrade pip==26.2.2", dockerfile
         )
         self.assertIn("RUN pip install --no-cache-dir -r requirements.txt", dockerfile)
         self.assertEqual(

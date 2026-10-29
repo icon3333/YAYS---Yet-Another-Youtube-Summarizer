@@ -246,7 +246,7 @@ class BackendDependencyPolicyTests(unittest.TestCase):
         runtime = (ROOT / "requirements.txt").read_text(encoding="utf-8")
 
         self.assertIn("-r requirements.txt", development)
-        self.assertIn("httpx2==2.7.0", development)
+        self.assertIn("httpx2==2.12.0", development)
         self.assertIn("pip-audit==2.10.1", development)
         self.assertNotIn("httpx2", runtime)
         self.assertNotIn("pip-audit", runtime)
@@ -254,7 +254,7 @@ class BackendDependencyPolicyTests(unittest.TestCase):
     def test_builder_pins_the_fixed_pip_before_installing_runtime_dependencies(self):
         dockerfile = (ROOT / "Dockerfile").read_text(encoding="utf-8")
 
-        upgrade = "RUN pip install --no-cache-dir --upgrade pip==26.1.2"
+        upgrade = "RUN pip install --no-cache-dir --upgrade pip==26.2.2"
         install = "RUN pip install --no-cache-dir -r requirements.txt"
         self.assertIn(upgrade, dockerfile)
         self.assertIn(install, dockerfile)
@@ -264,7 +264,7 @@ class BackendDependencyPolicyTests(unittest.TestCase):
         workflow = (ROOT / ".github/workflows/ci.yml").read_text(encoding="utf-8")
 
         self.assertIn(
-            "python3 -m pip install --upgrade pip==26.1.2 setuptools==83.0.0",
+            "python3 -m pip install --upgrade pip==26.2.2 setuptools==83.0.0",
             workflow,
         )
 
@@ -299,7 +299,7 @@ class BackendDependencyPolicyTests(unittest.TestCase):
 
         self.assertIn('version("fastapi") == "0.135.1"', smoke)
         self.assertIn('version("starlette") == "1.3.1"', smoke)
-        self.assertIn('version("pip") == "26.1.2"', smoke)
+        self.assertIn('version("pip") == "26.2.2"', smoke)
         self.assertIn("PackageNotFoundError", smoke)
         self.assertIn("setuptools_version", smoke)
 

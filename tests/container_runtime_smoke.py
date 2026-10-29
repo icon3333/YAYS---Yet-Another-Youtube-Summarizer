@@ -28,12 +28,12 @@ def run(
     return output
 
 
-assert version("yt-dlp") == "2026.6.9"
+assert version("yt-dlp") == "2026.7.4"
 assert version("yt-dlp-ejs") == "0.8.0"
-assert version("deno") == "2.8.1"
+assert version("deno") == "2.8.3"
 assert version("fastapi") == "0.135.1"
 assert version("starlette") == "1.3.1"
-assert version("pip") == "26.1.2"
+assert version("pip") == "26.2.2"
 try:
     setuptools_version = version("setuptools")
 except PackageNotFoundError:
