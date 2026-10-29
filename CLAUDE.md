@@ -166,7 +166,7 @@ Key implementation: `process_videos.py` (main loop) calls functions from `src/co
 ### Configuration
 - `docker-compose.yml`: Service definitions, volume mounts (CRITICAL: `./data` bind mount preserves database)
 - `requirements.txt`: Python dependencies (encryption libraries removed)
-- `Dockerfile`: Multi-stage build (base → summarizer/web)
+- `Dockerfile`: Multi-stage build (base → summarizer/web), pinned to a matched Chainguard Python 3.14 builder/runtime digest pair. Update both images together and pass container smoke tests before changing the supported Python version; moving `latest` tags can advance beyond dependency support.
 
 ## Critical Implementation Details
 

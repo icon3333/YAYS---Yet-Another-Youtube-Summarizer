@@ -34,7 +34,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          python3 -m pip install --upgrade pip==26.2.2 setuptools==83.0.0
+          python3 -m pip install --upgrade pip==26.2.2 setuptools==84.1.0
           python3 -m pip install -r requirements-dev.txt
 
       - name: Run tests

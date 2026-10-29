@@ -264,7 +264,7 @@ class BackendDependencyPolicyTests(unittest.TestCase):
         workflow = (ROOT / ".github/workflows/ci.yml").read_text(encoding="utf-8")
 
         self.assertIn(
-            "python3 -m pip install --upgrade pip==26.2.2 setuptools==83.0.0",
+            "python3 -m pip install --upgrade pip==26.2.2 setuptools==84.1.0",
             workflow,
         )
 
